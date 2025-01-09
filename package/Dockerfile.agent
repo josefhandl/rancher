@@ -5,7 +5,7 @@ ARG RANCHER_IMAGE=${REGISTRY}/${RANCHER_REPO}/rancher:${RANCHER_TAG}
 ARG ARCH
 ARG VERSION=dev
 
-FROM --platform=$BUILDPLATFORM registry.suse.com/bci/golang:1.22 AS build
+FROM registry.suse.com/bci/golang:1.22 AS build
 ARG VERSION=${VERSION}
 ARG CGO_ENABLED=0
 ARG TAGS="k8s"
@@ -17,7 +17,7 @@ ARG TARGETARCH
 WORKDIR /app
 
 # Only invalidate cache if mod files changes.
-COPY go.mod go.sum .
+COPY go.mod go.sum ./
 COPY pkg/apis/go.mod pkg/apis/go.sum pkg/apis/
 COPY pkg/client/go.mod pkg/client/go.sum pkg/client/
 RUN go mod download

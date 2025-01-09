@@ -269,7 +269,7 @@ ENV ETCD_UNSUPPORTED_ARCH ${ETCD_UNSUPPORTED_ARCH}
 
 
 # Enable exporting of the k3s images as part of the build process.
-FROM --platform=$BUILDPLATFORM registry.suse.com/bci/golang:1.22 AS images
+FROM registry.suse.com/bci/golang:1.22 AS images
 
 ENV CATTLE_K3S_VERSION v1.31.1+k3s1
 
@@ -283,7 +283,7 @@ RUN go build -tags k3s_export -o export-images ./...
 RUN ./export-images -k3s-version ${CATTLE_K3S_VERSION} -output /src/k3s-airgap-images.tar
 
 
-FROM --platform=$BUILDPLATFORM registry.suse.com/bci/golang:1.22 AS build
+FROM registry.suse.com/bci/golang:1.22 AS build
 ARG VERSION
 ARG COMMIT
 ARG RKE_VERSION
@@ -298,7 +298,7 @@ ARG TARGETARCH
 WORKDIR /app
 
 # Only invalidate cache if go.mod/go.sum changes.
-COPY go.mod go.sum .
+COPY go.mod go.sum ./
 COPY pkg/apis/go.mod pkg/apis/go.sum pkg/apis/
 COPY pkg/client/go.mod pkg/client/go.sum pkg/client/
 RUN go mod download
@@ -315,16 +315,18 @@ ENV CATTLE_SERVER_VERSION ${VERSION}
 ENV CATTLE_AGENT_IMAGE ${IMAGE_REPO}/rancher-agent:${VERSION}
 ENV CATTLE_SERVER_IMAGE ${IMAGE_REPO}/rancher
 
-COPY --chown=root:root --chmod=0755 \
+COPY --chown=root:root \
      --from=build /app/rancher /usr/bin/
-COPY --chown=root:root --chmod=0755 \
+COPY --chown=root:root \
      --from=images /src/k3s-airgap-images.tar /var/lib/rancher/k3s/agent/images/
 
-COPY --chown=root:root --chmod=0755 \
+COPY --chown=root:root \
         package/loglevel \
         package/entrypoint.sh \
         package/kustomize.sh \
         package/jailer.sh /usr/bin/
+
+RUN chmod 0755 /usr/bin/rancher /var/lib/rancher/k3s/agent/images/k3s-airgap-images.tar /usr/bin/loglevel /usr/bin/entrypoint.sh /usr/bin/kustomize.sh /usr/bin/jailer.sh
 
 VOLUME /var/lib/rancher
 VOLUME /var/lib/kubelet
